@@ -4,7 +4,10 @@ Documentation of a JWT-gen, which JWT is set for a backend call. In addition, th
 APIC/DataPower version notes:  
 - This solution was developed for APIC v10.0.8.x.  
 - Due to the distributed variable feature, this solution is not supported on APIC v10.0.5.x LTS or below.  
-- The distributed variable feature was introduced on DataPower firmware 10.5.x (CD version), which is aligned with APIC v10.0.7.x (CD version).  
+- The distributed variable feature was introduced on DataPower firmware 10.5.x (CD version), which is aligned with APIC v10.0.7.x (CD version).
+
+
+The completed [JWT-Gen-with-Distributed-Caching-custom-policy](https://github.com/ibmArtifacts/APIC-JWT-Gen-with-Distributed-Caching-custom-policy/blob/main/JWT-Gen-with-Distributed-Caching.yaml).
 
 ## Overview  
 The purpose of this solution is to provide a JWT to establish trust between the APIC gateways to backend systems.  
