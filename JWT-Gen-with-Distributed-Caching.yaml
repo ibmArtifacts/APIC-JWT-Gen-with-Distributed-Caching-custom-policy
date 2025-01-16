@@ -148,7 +148,7 @@ assembly:
                   title: jwt-generate
                   jwt: generated.jwt
                   iss-claim: iss-claim
-                  exp-claim: $(local.parameter.udp-expclaim)
+                  exp-claim: 3600
                   aud-claim: local.parameter.udp-audclaim
                   jws-jwk: ''
                   sub-claim: ''
