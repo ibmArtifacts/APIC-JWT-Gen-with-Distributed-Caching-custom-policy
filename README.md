@@ -9,7 +9,10 @@ APIC/DataPower version notes:
 
 
 The completed [JWT-Gen-with-Distributed-Caching-custom-policy](https://github.com/ibmArtifacts/APIC-JWT-Gen-with-Distributed-Caching-custom-policy/blob/main/JWT-Gen-with-Distributed-Caching.yaml).
-
+- Zip up the yaml and upload into the catalog you would like to use this on. Remember, a TLS client profile needs to be created with the name 'jwt', and set in the catalog for the custom policy to work properly.  
+  
+The API to test this solution can be downloaded from [jwt-gen-api.yaml](https://github.com/ibmArtifacts/APIC-JWT-Gen-with-Distributed-Caching-custom-policy/blob/main/jwt-gen-api.yaml), which can be uploaded to your API Manager.  
+  
 ## Overview  
 The purpose of this solution is to provide a JWT to establish trust between the APIC gateways to backend systems.  
 From a high-level,  
