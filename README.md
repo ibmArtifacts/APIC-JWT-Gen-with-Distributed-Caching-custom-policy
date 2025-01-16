@@ -11,8 +11,6 @@ APIC/DataPower version notes:
 The completed [JWT-Gen-with-Distributed-Caching-custom-policy](https://github.com/ibmArtifacts/APIC-JWT-Gen-with-Distributed-Caching-custom-policy/blob/main/JWT-Gen-with-Distributed-Caching.yaml).
 - Zip up the yaml and upload into the catalog you would like to use this on. Remember, a TLS client profile needs to be created with the name 'jwt', and set in the catalog for the custom policy to work properly.  
   
-The API to test this solution can be downloaded from [jwt-gen-api.yaml](https://github.com/ibmArtifacts/APIC-JWT-Gen-with-Distributed-Caching-custom-policy/blob/main/jwt-gen-api.yaml), which can be uploaded to your API Manager.  
-  
 ## Overview  
 The purpose of this solution is to provide a JWT to establish trust between the APIC gateways to backend systems.  
 From a high-level,  
@@ -26,6 +24,8 @@ It requires a TLS client profile to be created with the name jwt and set in the 
 ## JWT-Gen-with-Distributed-Caching Walk-Through  
 All the following policies are used to create the custom policy later.  
 A separate API is built to test the functionality of the complete solution before the assembly policies are extracted and put together into a user-defined (custom) policy yaml. The next section describes each policy in-depth for the API, which later, policy code will be used to build out the custom policy.  
+
+The API to test this solution can be downloaded from [jwt-gen-api.yaml](https://github.com/ibmArtifacts/APIC-JWT-Gen-with-Distributed-Caching-custom-policy/blob/main/jwt-gen-api.yaml).  
   
 ### JWT-Gen-with-Distributed-Caching: Policies
 ![image](https://github.com/user-attachments/assets/07f2da17-efc0-484b-b06b-db0c1919e393)  
@@ -40,7 +40,7 @@ The certificate serial number is set to a variable to be used in the next policy
 ![image](https://github.com/user-attachments/assets/8a4ce8e8-ba8e-40a1-a251-a44bf853c3db)  
 
 This gatewayscript will take the certificate serial number set from xslt-get-cert-serial policy, and compare the cert serial number from the cache, in addition check the time-to-live (ttl) value.
-- If the cert serial does not match the cached cert serial number, or if the time have past the ttl value set, then a flag will be set to generate a new JWT.  
+- If the cert serial does not match the cached cert serial number, or if the time have passed the ttl value set, then a flag will be set to generate a new JWT.  
 - If the time passed is within the ttl value, and cert serial numbers match, then the cached JWT will be set to the header to the backend, thus skipping the JWT-gen processing.
 
 #### 3. switch  
@@ -79,6 +79,13 @@ When the consumer calls the API again within the TTL seconds, the gatewayscript 
 ![image](https://github.com/user-attachments/assets/100f012e-86b7-4374-96e0-1a40f37e2917)  
 
 This last policy sets the newly generated JWT to the header for the backend to consume.  
+
+## JWT-Gen-with-Distributed-Caching User-Defined (custom) Policy  
+
+
+
+
+
 
 
 
