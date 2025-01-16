@@ -1,0 +1,232 @@
+policy: 1.0.0
+info:
+  title: JWT-Gen-with-Distributed-Caching
+  name: jwt-gen-with-distributed-caching
+  version: 1.0.0
+  description: This custom policy generates JWT, with app-name injected into the private claim, and sets it to authorization header downstream (header name is adjustable). This solution also uses the distributed variables, which ensures that the cache is synchronized via the gateway-peering instance (https://www.ibm.com/docs/en/datapower-gateway/10.6.0?topic=administration-distributed-variables).
+  contact:
+    name: IBM
+    url: https://www.ibm.com/docs/en/api-connect/10.0.x?topic=policies-authoring-datapower-api-gateway
+    email: wkliao@us.ibm.com
+attach:
+  - rest
+  - soap
+gateways:
+  - datapower-api-gateway
+properties:
+  $schema: 'http://json-schema.org/draft-04/schema#'
+  type: object
+  properties:
+    udp-ttl:
+      label: 'TTL (seconds) for JWT Cache '
+      description: Cache time for each JWT. Default is 900 seconds.
+      type: string
+      default: '900'
+    udp-audclaim:
+      label: 'Aud-Claim '
+      description: Audience Claim. Default is IBM.
+      type: string
+      default: 'IBM'
+    udp-expclaim:
+      label: 'JWT Validity '
+      description: JWT expiration. Default is 3600.
+      type: string
+      default: '3600'
+    udp-backendHeader:
+      label: 'Backend http header name. '
+      description: Default is authorization.
+      type: string
+      default: 'authorization'
+assembly:
+  execute:
+    - xslt:
+        version: 2.1.0
+        title: xslt-get-cert-serial
+        input: false
+        serialize-output: false
+        source: |-
+          <xsl:stylesheet version="1.0"
+                  xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                  xmlns:apigw="http://www.ibm.com/xmlns/datapower/2017/11/apigateway"
+                  xmlns:dp="http://www.datapower.com/extensions"
+                  extension-element-prefixes="apigw dp"
+                  exclude-result-prefixes="apigw">
+                  <xsl:output method="xml" indent="yes" omit-xml-declaration="yes" />
+                    <xsl:template  match="/">
+                      <xsl:variable name="vPORG" select="apigw:get-variable('api.org.name')"/>
+                      <xsl:variable name="vCatalog" select="apigw:get-variable('api.catalog.name')"/>
+                      <xsl:variable name="vCertSerial">
+                        <xsl:value-of select="dp:get-cert-serial(concat('name:', $vPORG, '_', $vCatalog, '_tlsp-jwtV1.0.0-ca-0'))"/>
+                      </xsl:variable>
+                      <apigw:set-variable name="'currentCertSerial'" value="$vCertSerial"/>
+                    </xsl:template>
+                </xsl:stylesheet>
+        compile-settings: {}
+    - gatewayscript:
+        version: 2.0.0
+        title: 'gwyscript: get-cache'
+        source:  >-
+          var vTTL = context.get('local.parameter.udp-ttl'); //seconds
+
+          var dm = require('distributed-metadata');
+
+          let vClientID = context.get('client.app.id');
+
+          //console.log('****vClientID-from-get-cache: '+
+          vClientID);
+
+          let vKey = 'var://dist/x-ibm-clientid/' + vClientID;
+          console.log('****vKey-from-get-cache-gwyscript: ' + vKey);
+
+          dm.getVariable(vKey,function(error,result) {
+            if(!error) {
+              console.log('****Cached-value-found-as: ' + result);
+              
+              let vCachedCertSerial = result.split('|').pop().split(',')[0];
+              console.debug('****vCachedCertSerial: ' + vCachedCertSerial);
+              
+              let vCurrentCertSerial = context.get('currentCertSerial');
+              console.debug('****vCurrentCertSerial: ' + vCurrentCertSerial);
+              
+              let vDate = result.split('|')[0];
+              //console.log('****vDate: ' + vDate);
+              
+              const vJWTElapsedTime = Math.round(((new Date()) - (Date.parse(vDate))) / 1000);
+              console.log('****vJWTElapsedTime: ' + vJWTElapsedTime + ' seconds');
+              
+              //Delete the cache if the TTL has passed, or if the key signing the jwt has been changed.
+              if((vJWTElapsedTime >= vTTL) || (vCachedCertSerial != vCurrentCertSerial)){
+                  dm.delVariable(vKey,function(error,delResult) {
+                    if(!error) {
+                      //console.log('****delVariable result = ' + delResult);
+                      console.log('****Deleted cache for ' + vKey + ' Either TTL elapsed, or Cert has been updated.****');
+                      context.set('jwtNotFound', 'true');
+                    } else {
+                      console.error('****Delete cache errored with = ' + error);
+                    }
+                  });
+              };
+              context.set('message.headers.JWT-Header', result.split(',')[1]);
+            } else {
+              context.set('jwtNotFound', 'true');
+              console.log('****jwtNotFound: ' + context.get('jwtNotFound'));
+            }
+          });
+    - switch:
+        version: 2.1.0
+        title: switch
+        case:
+          - condition: $apiCtx().jwtNotFound = 'true'
+            execute:
+              - gatewayscript:
+                  version: 2.0.0
+                  title: 'gwyscript: set variables'
+                  source: >-
+                    context.set('iss-claim', 'apic');
+
+                    //Set the jwks if you would like to use jwks
+                    rather than crypto object. You must update the
+                    jwt-gen policy to reflect this update. 
+
+                    //context.set('hs256-key', '{ "alg": "HS256",
+                    "kty": "oct", "use": "sig", "k":
+                    "o5yErLaE-dbgVpSw65Rq57OA9dHyaF66Q_Et5azPa-XUjbyP0w9iRWhR4kru09aFfQLXeIODIN4uhjElYKXt8n76jt0Pjkd2pqk4t9abRF6tnL19GV4pflfL6uvVKkP4weOh39tqHt4TmkBgF2P-gFhgssZpjwq6l82fz3dUhQ2nkzoLA_CnyDGLZLd7SZ1yv73uzfE2Ot813zmig8KTMEMWVcWSDvy61F06vs_6LURcq_IEEevUiubBxG5S2akNnWigfpbhWYjMI5M22FOCpdcDBt4L7K1-yHt95Siz0QUb0MNlT_X8F76wH7_A37GpKKJGqeaiNWmHkgWdE8QWDQ",
+                    "kid": "hs256-key" }');
+
+                    let vJwtKeyName = context.get('api.org.name') + '_' + context.get('api.catalog.name') + '_tlsp-jwtV1.0.0-key';
+
+                    console.debug('****vJwtKeyName: ' + vJwtKeyName); context.set('jwtkey', vJwtKeyName);
+
+
+                    var appName = context.get('client.app.name'); 
+
+                    //console.log('****appName: ' + appName);
+
+
+                    if(appName!=null) {
+                      var msg =  {"app_name":appName};
+                      context.set('pvt-claim', msg);
+                    } else {
+                      var msg =  {"app_name":"AppNotFOund"};
+                      context.set('pvt-claim', msg);
+                    }
+
+                    console.log('****[Completed-setting-all-variables-and-appName]****');
+              - jwt-generate:
+                  version: 2.0.0
+                  title: jwt-generate
+                  jwt: generated.jwt
+                  iss-claim: iss-claim
+                  exp-claim: local.parameter.udp-expclaim
+                  aud-claim: local.parameter.udp-audclaim
+                  jws-jwk: ''
+                  sub-claim: ''
+                  private-claims: pvt-claim
+                  jws-crypto: $(jwtkey)
+                  jws-alg: RS256
+              - xslt:
+                  version: 2.1.0
+                  title: xslt-set-cert-serial
+                  input: false
+                  serialize-output: false
+                  source: |-
+                    <xsl:stylesheet version="1.0"
+                            xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                            xmlns:apigw="http://www.ibm.com/xmlns/datapower/2017/11/apigateway"
+                            xmlns:dp="http://www.datapower.com/extensions"
+                            extension-element-prefixes="apigw dp"
+                            exclude-result-prefixes="apigw">
+                            <xsl:output method="xml" indent="yes" omit-xml-declaration="yes" />
+                              <xsl:template  match="/">
+                                <xsl:variable name="vPORG" select="apigw:get-variable('api.org.name')"/>
+                                <xsl:variable name="vCatalog" select="apigw:get-variable('api.catalog.name')"/>
+                                <xsl:variable name="vCertSerial">
+                                  <xsl:value-of select="dp:get-cert-serial(concat('name:', $vPORG, '_', $vCatalog, '_tlsp-jwtV1.0.0-ca-0'))"/>
+                                </xsl:variable>
+                                <apigw:set-variable name="'setCertSerial'" value="$vCertSerial"/>
+                              </xsl:template>
+                          </xsl:stylesheet>
+                  compile-settings: {}
+              - gatewayscript:
+                  version: 2.0.0
+                  title: 'gwyscript: cache'
+                  source: >-
+                    var dm = require('distributed-metadata'); 
+
+                    var vJWT = context.get('generated.jwt'); 
+
+                    //console.log('****vJWT: ' + vJWT);
+
+                    var vSetCertSerial =
+                    context.get('setCertSerial');
+
+                    var vClientID = context.get('client.app.id'); 
+
+                    //console.log('****vClientID: '+ vClientID);
+
+                    var vKey = 'var://dist/x-ibm-clientid/' + vClientID; 
+
+                    //console.log('****vKey: ' + vKey);
+
+                    var vValue = Date() + '|' + vSetCertSerial + ',' + vJWT;
+
+
+                    dm.setVariable(vKey,
+                    vValue,function(error,result) {
+                      if( !error) {
+                        console.log('****setVariable-cache-key-and-value result= ' + result);
+                        console.log('****Cached-the-value: ' + vValue);
+                      } else {
+                        console.error('****setVariable-error = ' + error);
+                      }
+                    });
+              - gatewayscript:
+                  version: 2.0.0
+                  title: 'gwyscript: set jwt header'
+                  description: ''
+                  source: >-
+                    let vJWT = context.get('generated.jwt');
+                    let vSetHeader = 'message.headers.' + context.get('local.parameter.udp-backendHeader');
+                    context.set(vSetHeader, vJWT);
+
+                    console.log('****vJWTOutput: ' + vJWT);
