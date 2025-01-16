@@ -2,7 +2,7 @@ swagger: '2.0'
 info:
   title: jwt
   x-ibm-name: jwt
-  version: 1.0.0
+  version: 3.0.0
   x-pathalias: jwt-1.0.0
 x-ibm-configuration:
   cors:
@@ -107,16 +107,8 @@ x-ibm-configuration:
                               source: >-
                                 context.set('iss-claim', 'apic'); 
 
-                                context.set('aud-claim','canadapost');
+                                context.set('aud-claim','IBM');
 
-                                //Set the jwks if you would like to use jwks
-                                rather than crypto object. You must update the
-                                jwt-gen policy to reflect this update. 
-
-                                //context.set('hs256-key', '{ "alg": "HS256",
-                                "kty": "oct", "use": "sig", "k":
-                                "o5yErLaE-dbgVpSw65Rq57OA9dHyaF66Q_Et5azPa-XUjbyP0w9iRWhR4kru09aFfQLXeIODIN4uhjElYKXt8n76jt0Pjkd2pqk4t9abRF6tnL19GV4pflfL6uvVKkP4weOh39tqHt4TmkBgF2P-gFhgssZpjwq6l82fz3dUhQ2nkzoLA_CnyDGLZLd7SZ1yv73uzfE2Ot813zmig8KTMEMWVcWSDvy61F06vs_6LURcq_IEEevUiubBxG5S2akNnWigfpbhWYjMI5M22FOCpdcDBt4L7K1-yHt95Siz0QUb0MNlT_X8F76wH7_A37GpKKJGqeaiNWmHkgWdE8QWDQ",
-                                "kid": "hs256-key" }');
 
                                 let vJwtKeyName = context.get('api.org.name') +
                                 '_' + context.get('api.catalog.name') +
