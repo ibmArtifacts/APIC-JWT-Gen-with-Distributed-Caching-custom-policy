@@ -1,5 +1,5 @@
 # APIC-JWT-Gen-with-Distributed-Caching-custom-policy
-This custom policy (user-defined policy) generates JWT, with app-name injected into the private claim, and sets it to authorization header downstream (header name is adjustable).  
+This custom policy (user-defined policy) generates a JWT, with the consumer app-name injected into the private claim, and sets it to authorization header downstream (header name is adjustable).  
 This solution also uses the distributed variables, which ensures that the cache is synchronized via the gateway-peering instance across gateways nodes within a cluster (https://www.ibm.com/docs/en/datapower-gateway/10.6.0?topic=administration-distributed-variables). 
 
 APIC/DataPower version notes:  
