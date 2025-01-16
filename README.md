@@ -98,8 +98,9 @@ To use a user-defined policy (UDP) property within a gatewayscript, the `context
 Thus, shown in the diagram above, the `context.get('local.parameter.udp-ttl')` is used to pull in the input value of the custom policy.  
 
 #### JWT-Gen-with-Distributed-Caching User-Defined (custom) Policy: aud-claim and expclaim input  
-![image](https://github.com/user-attachments/assets/896ce9f8-922b-4d70-a7bb-5f7bae45e38c)  
-The jwt-generate policy takes in the context variable, therefore the `local.parameter.NAME_OF_UDP_PROPERTY` can be set there as shown in the diagram above.  
+![image](https://github.com/user-attachments/assets/d54803ad-b260-4158-b657-43587df53b37)  
+The aud-claim in the jwt-generate policy takes in the context variable, therefore the `local.parameter.aud-claim` can be set there as shown in the diagram above.  
+The exp-claim in the jwt-generate policy requires the `$(local.parameter.udp-expclaim)` because the input treats the input as a literal string unless the `$()` function is used as shown in the diagram above.
 
 #### JWT-Gen-with-Distributed-Caching User-Defined (custom) Policy: backendHeader input  
 ![image](https://github.com/user-attachments/assets/2a7149ab-f779-45e7-8071-b4d75e20a6f2)  
