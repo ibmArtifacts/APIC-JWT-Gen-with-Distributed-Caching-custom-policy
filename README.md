@@ -100,7 +100,8 @@ Thus, shown in the diagram above, the `context.get('local.parameter.udp-ttl')` i
 #### JWT-Gen-with-Distributed-Caching User-Defined (custom) Policy: aud-claim and expclaim input  
 ![image](https://github.com/user-attachments/assets/d54803ad-b260-4158-b657-43587df53b37)  
 The aud-claim in the jwt-generate policy takes in the context variable, therefore the `local.parameter.aud-claim` can be set there as shown in the diagram above.  
-NOTE: APIC BUG for the exp-claim. The schema for the exp-claim within the gateway uses a numerator, and would fail if any string values are used, therefore the policy will fail schema validation when uploaded if the exp-claim value uses `local.parameter.aud-claim` or `$(local.parameter.aud-claim)`.  
+
+**NOTE: APIC BUG** for the `exp-claim`. The schema for the `exp-claim` within the gateway uses a integer, and would fail if any string values are used, therefore the policy will fail schema validation when uploaded if the exp-claim value uses `local.parameter.aud-claim` or `$(local.parameter.aud-claim)`.  
 You will have to manually update this in the code if you wish to change the value, and then upload or re-upload the custom policy. Keep in mind, if the custom policy is already on an API that is published, you'll have to create a new version of the custom policy because it will not allow you to overwrite the custom policy already being used on the published API.  
 
 #### JWT-Gen-with-Distributed-Caching User-Defined (custom) Policy: backendHeader input  
